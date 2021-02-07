@@ -12,7 +12,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-Wall -std=gnu99_@@_-O2_@@_
 CppCompiler=-Wall_@@_-O2_@@_
-Linker=-l"mingw32"_@@_-l"SDL2main"_@@_-l"SDL2.dll"_@@_-l"SDL2_image"_@@_
+Linker=-l"mingw32"_@@_-l"SDL2main"_@@_-l"SDL2.dll"_@@_-l"SDL2_image"_@@_-l"SDL2_mixer"_@@_
 IsCpp=0
 Icon=port_release.ico
 ExeOutput=
@@ -27,7 +27,7 @@ CustomMakefile=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=3
-CompilerSettings=0000000100000000000001000
+CompilerSettings=000a000100000000000001000
 LogOutput=
 LogOutputEnabled=0
 

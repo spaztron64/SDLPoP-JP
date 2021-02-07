@@ -55,6 +55,11 @@ extern "C" {
 #include "proto.h"
 #include "data.h"
 
+#ifndef std
+#define std
+#include <stdio.h>
+#endif
+
 #ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
@@ -73,6 +78,8 @@ extern "C" {
 			quit(2);				\
 		}						\
 	} while (0)
+
+
 
 #ifdef __cplusplus
 }

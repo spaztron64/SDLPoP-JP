@@ -293,7 +293,8 @@ void __pascal far init_ending_kid() {
 
 // seg001:034D
 void __pascal far cutscene_8() {
-	play_sound(sound_35_cutscene_8_9); // cutscene 8, 9
+	//play_sound(sound_35_cutscene_8_9); // cutscene 8, 9
+	play_bgm("data/music/cutscene.ogg",-1, 2);
 	set_hourglass_state(hourglass_frame());
 	init_mouse_cu8();
 	savekid();
@@ -311,7 +312,8 @@ void __pascal far cutscene_8() {
 
 // seg001:03B7
 void __pascal far cutscene_9() {
-	play_sound(sound_35_cutscene_8_9); // cutscene 8, 9
+	//play_sound(sound_35_cutscene_8_9); // cutscene 8, 9
+	play_bgm("data/music/cutscene.ogg",-1, 2);
 	set_hourglass_state(hourglass_frame());
 	princess_stand();
 	saveshad();
@@ -328,6 +330,7 @@ void __pascal far cutscene_9() {
 
 // seg001:041C
 void __pascal far end_sequence_anim() {
+	Mix_HaltMusic();
 	disable_keys = 1;
 	if (!is_sound_on) {
 		turn_sound_on_off(0x0F);
@@ -382,7 +385,8 @@ void __pascal far cutscene_12() {
 		set_hourglass_state(var_2);
 		init_princess_x156();
 		saveshad();
-		play_sound(sound_40_cutscene_12_short_time); // cutscene 12 short time
+		//play_sound(sound_40_cutscene_12_short_time); // cutscene 12 short time
+		play_bgm("data/music/cutscene.ogg",-1, 2);
 		if (fade_in_1()) return;
 		if (proc_cutscene_frame(2)) return;
 		seqtbl_offset_shad_char(98); // princess turn around [PV1]
@@ -395,7 +399,8 @@ void __pascal far cutscene_12() {
 
 // seg001:0584
 void __pascal far cutscene_4() {
-	play_sound(sound_27_cutscene_2_4_6_12); // cutscene 2, 4, 6, 12
+	//play_sound(sound_27_cutscene_2_4_6_12); // cutscene 2, 4, 6, 12
+	play_bgm("data/music/cutscene.ogg",-1, 2);
 	set_hourglass_state(hourglass_frame());
 	princess_lying();
 	saveshad();
@@ -406,7 +411,8 @@ void __pascal far cutscene_4() {
 
 // seg001:05B8
 void __pascal far cutscene_2_6() {
-	play_sound(sound_27_cutscene_2_4_6_12); // cutscene 2, 4, 6, 12
+	//play_sound(sound_27_cutscene_2_4_6_12); // cutscene 2, 4, 6, 12
+	play_bgm("data/music/cutscene.ogg",-1, 2);
 	set_hourglass_state(hourglass_frame());
 	init_princess_right();
 	saveshad();

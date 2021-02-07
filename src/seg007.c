@@ -292,7 +292,7 @@ void __pascal far animate_chomper() {
 	if (trob.type >= 0) {
 		blood = curr_modifier & 0x80;
 		frame = (curr_modifier & 0x7F) + 1;
-		if (frame > /*15*/ custom->chomper_speed) {
+		if (frame > 15) {
 			frame = 1;
 		}
 		curr_modifier = blood | frame;
@@ -387,9 +387,9 @@ Possible values of anim_type:
 				} else {
 					// opening
 					if (curr_modifier < 188) {
-						if ((curr_modifier & 7) == 0) {
+						//if ((curr_modifier & 7) == 0) {
 							play_sound(sound_5_gate_opening); // gate opening
-						}
+						//}
 					} else {
 						// stop
 						if (anim_type < 2) {
@@ -459,6 +459,8 @@ Possible values of trob_type:
 				stop_sounds();
 				if (leveldoor_open == 0 || leveldoor_open == 2) {
 					leveldoor_open = 1;
+					music_mode = 2;
+					play_bgm("data/music/smallpotion.ogg",0,2);
 					if (current_level == /*4*/ custom->mirror_level) {
 						// Special event: place mirror
 						get_tile(/*4*/ custom->mirror_room, /*4*/ custom->mirror_column, /*0*/ custom->mirror_row);
@@ -1132,7 +1134,7 @@ void __pascal far draw_mob() {
 	if (curmob.room == drawn_room) {
 		if (curmob.y >= 210) return;
 	} else if (curmob.room == room_B) {
-		if (ABS((sbyte)ypos) >= 18) return;
+		if (ABS(ypos) >= 18) return;
 		curmob.y += 192;
 		ypos = curmob.y;
 	} else if (curmob.room == room_A) {

@@ -170,13 +170,13 @@ static int global_ini_callback(const char *section, const char *name, const char
 	if (check_ini_section("General")) {
 #ifdef USE_MENU
 		process_boolean("enable_pause_menu", &enable_pause_menu);
-#endif
 		if (strcasecmp(name, "mods_folder") == 0) {
 			if (value[0] != '\0' && strcasecmp(value, "default") != 0) {
 				strcpy(mods_folder, locate_file(value));
 			}
 			return 1;
 		}
+#endif
 		process_boolean("enable_copyprot", &enable_copyprot);
 		process_boolean("enable_music", &enable_music);
 		process_boolean("enable_fade", &enable_fade);
@@ -376,9 +376,6 @@ static int global_ini_callback(const char *section, const char *name, const char
 		process_word("win_level", &custom_saved.win_level, &never_is_16_list);
 		process_byte("win_room", &custom_saved.win_room, NULL);
 		process_byte("loose_floor_delay", &custom_saved.loose_floor_delay, NULL);
-		process_byte("base_speed", &custom_saved.base_speed, NULL);
-		process_byte("fight_speed", &custom_saved.fight_speed, NULL);
-		process_byte("chomper_speed", &custom_saved.chomper_speed, NULL);
 	} // end of section [CustomGameplay]
 
 	// [Level 1], etc.
@@ -441,9 +438,7 @@ void set_options_to_default() {
 	enable_quicksave = 1;
 	enable_quicksave_penalty = 1;
 	enable_replay = 1;
-#ifdef USE_LIGHTING
 	enable_lighting = 0;
-#endif
 	// By default, all the fixes are used, unless otherwise specified.
 	// So, if one of these options is omitted from the INI file, they default to true.
 	memset(&fixes_saved, 1, sizeof(fixes_saved));
@@ -689,11 +684,6 @@ void load_dos_exe_modifications(const char* folder_name) {
 		// automatic moves
 		process(&custom_saved.shad_drink_move,  8*4, {     -1, 0x1D492,      -1, 0x1D384,      -1, 0x19D2E}); // in the packed versions, the four zero bytes at the start are compressed
 		process(&custom_saved.demo_moves     , 25*4, {0x1B8EE, 0x1D4B2, 0x1C70B, 0x1D3A4, 0x18ADD, 0x19D4E});
-
-		// speeds
-		process(&custom_saved.base_speed   , 1, { 0x4F01, 0x65B1, 0x5389, 0x5AC9, 0x4E45, 0x5F75 });
-		process(&custom_saved.fight_speed  , 1, { 0x4EF9, 0x65A9, 0x5381, 0x5AC1, 0x4E3D, 0x5F6D });
-		process(&custom_saved.chomper_speed, 1, { 0x8BBD, 0xA26D, 0x906D, 0x97AD, 0x8B29, 0x9C59 });
 
 		// The order of offsets is: dos_10_packed, dos_10_unpacked, dos_13_packed, dos_13_unpacked, dos_14_packed, dos_14_unpacked
 

@@ -35,6 +35,9 @@ void __pascal far seqtbl_offset_opp(int seq_index) {
 
 // seg005:0030
 void __pascal far do_fall() {
+	if(Char.charid == charid_0_kid){
+		holding_sword = 0;
+	}
 	if (is_screaming == 0 && Char.fall_y >= 31) {
 		play_sound(sound_1_falling); // falling
 		is_screaming = 1;
@@ -203,6 +206,10 @@ void __pascal far land() {
 		loc_5F75:
 		play_sound(sound_0_fell_to_death); // prince crashing into the floor
 		seq_id = seq_22_crushed; // dead (after falling)
+		
+		if (hitp_curr == 0){	
+			Mix_HaltMusic();
+		}
 	}
 	seqtbl_offset_char(seq_id);
 	play_seq();
@@ -211,34 +218,21 @@ void __pascal far land() {
 
 // seg005:01B7
 void __pascal far spiked() {
-	int forward_bump = 8;
 	// If someone falls into spikes, those spikes become harmless (to others).
 	curr_room_modif[curr_tilepos] = 0xFF;
-#ifdef FIX_SPIKED_GUARD
-	// If someone falls into spikes in a different room
-	if (Char.room != curr_room /* && fixes->??? */) {
-		if (Char.charid == charid_0_kid) {
-			// fixes an issue where kid falling into spikes disappears
-			if (Char.curr_col == -1) {
-				draw_kid();
-				forward_bump = Char.direction == dir_0_right ? -6 : 16;
-			}
-		} else {
-			// remove guard from the original room
-			level.guards_tile[Char.room - 1] = -1;
-		}
-		// draw character in the correct room
-		Char.room = curr_room;
-	}
-#endif
 	Char.y = y_land[Char.curr_row + 1];
 	Char.x = x_bump[tile_col + 5] + 10;
-	Char.x = char_dx_forward(forward_bump);
+	Char.x = char_dx_forward(8);
 	Char.fall_y = 0;
 	play_sound(sound_48_spiked); // something spiked
+	
+
 	take_hp(100);
 	seqtbl_offset_char(seq_51_spiked); // spiked
 	play_seq();
+	if (hitp_curr == 0){	
+		Mix_HaltMusic();
+	}
 }
 
 // seg005:0213
@@ -310,8 +304,10 @@ void __pascal far control_crouched() {
 		// Special event: music when crouching
 		if (! check_sound_playing()) {
 			if (need_level1_music == 1) {
-				play_sound(sound_25_presentation); // presentation (level 1 start)
-				need_level1_music = 2;
+				//play_sound(sound_25_presentation); // presentation (level 1 start)
+				need_level1_music = 0;
+				seqtbl_offset_char(seq_49_stand_up_from_crouch); // stand up from crouch
+				
 			} else {
 #ifdef USE_REPLAY
 				if (recording) special_move = MOVE_EFFECT_END;
@@ -350,6 +346,7 @@ void __pascal far control_standing() {
 			var_2 = char_opp_dist();
 			if (var_2 >= -10 && var_2 < 90) {
 				holding_sword = 1;
+				play_bgm("data/music/guardfight.ogg",-1, 1);
 				if ((word)var_2 < (word)-6) {
 					if (Opp.charid == charid_1_shadow &&
 						(Opp.action == actions_3_in_midair || (Opp.frame >= frame_107_fall_land_1 && Opp.frame < 118))
@@ -507,6 +504,8 @@ void __pascal far back_pressed() {
 		Char.sword = sword_2_drawn;
 		offguard = 0;
 		seq_id = seq_89_turn_draw_sword; // turn and draw sword
+		play_bgm("data/music/guardfight.ogg",-1, 1);
+		holding_sword = 1;
 	}
 	seqtbl_offset_char(seq_id);
 }
@@ -865,6 +864,7 @@ void __pascal far draw_sword() {
 #endif
 	if (Char.charid == charid_0_kid) {
 		play_sound(sound_19_draw_sword); // taking out the sword
+		//play_bgm("data/music/guardfight.ogg",-1, 1);
 		offguard = 0;
 	} else if (Char.charid != charid_1_shadow) {
 		seq_id = seq_90_en_garde; // stand active
@@ -935,10 +935,16 @@ void __pascal far swordfight() {
 				guard_refrac = 9;
 				holding_sword = 0;
 				seq_id = seq_93_put_sword_away_fast; // put sword away fast (down pressed)
+				play_bgm("data/music/level1.ogg",-1,0);
 			} else if (charid == charid_1_shadow) {
 				seq_id = seq_92_put_sword_away; // put sword away
 			} else {
 				seq_id = seq_87_guard_become_inactive; // stand inactive (when Kid leaves sight)
+				//holding_sword = 0;
+				//if (Char.sword == sword_0_sheathed && offguard == 1){
+				//
+				//	play_bgm("data/music/level1.ogg",-1,0);
+				//}
 			}
 			seqtbl_offset_char(seq_id);
 		}

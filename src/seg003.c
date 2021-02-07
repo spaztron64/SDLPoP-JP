@@ -82,6 +82,11 @@ void __pascal far play_level(int level_number) {
 			load_lev_spr(level_number);
 		}
 		load_level();
+		//track = Mix_LoadMUS("data/music/level1.ogg");
+		//Mix_VolumeMusic(128);
+		//Mix_PlayMusic(track,-1);
+		music_timer = 0;
+		play_bgm("data/music/level1.ogg", -1, 0);
 		pos_guards();
 		clear_coll_rooms();
 		clear_saved_ctrl();
@@ -358,10 +363,10 @@ int __pascal far play_level_2() {
 #endif
 		if (Kid.sword == sword_2_drawn) {
 			// speed when fighting (smaller is faster)
-			set_timer_length(timer_1, /*6*/ custom->fight_speed);
+			set_timer_length(timer_1, 6);
 		} else {
 			// speed when not fighting (smaller is faster)
-			set_timer_length(timer_1, /*5*/ custom->base_speed);
+			set_timer_length(timer_1, 5);
 		}
 		guardhp_delta = 0;
 		hitp_delta = 0;
@@ -381,7 +386,8 @@ int __pascal far play_level_2() {
 			is_restart_level = 0;
 			return current_level;
 		} else {
-			if (next_level == current_level || check_sound_playing()) {
+			//if (next_level == current_level || check_sound_playing()) {
+			if (next_level == current_level || Mix_PlayingMusic() == 1) {
 				draw_game_frame();
 				flash_if_hurt();
 				remove_flash_if_hurt();
@@ -496,19 +502,16 @@ void __pascal far timers() {
 	if (resurrect_time > 0) {
 		--resurrect_time;
 	}
-
-	if (is_feather_fall) is_feather_fall++;
-
-	if (is_feather_fall && (!check_sound_playing() || is_feather_fall > 225)) {
-		printf("slow fall ended at: rem_min = %d, rem_tick = %d\n", rem_min, rem_tick);
-		printf("length = %d ticks\n", is_feather_fall);
+	if (is_feather_fall && !check_sound_playing()) {
+		Mix_HaltMusic();
 #ifdef USE_REPLAY
 		if (recording) special_move = MOVE_EFFECT_END;
 		if (!replaying) // during replays, feather effect gets cancelled in do_replay_move()
 #endif
 		is_feather_fall = 0;
+		play_bgm("data/sound/level1.ogg", 0, 0);
+		
 	}
-
 	// Special event: mouse
 	if (current_level == /*8*/ custom->mouse_level && Char.room == /*16*/ custom->mouse_room && leveldoor_open) {
 		++leveldoor_open;
@@ -529,7 +532,7 @@ void __pascal far check_mirror() {
 			loadkid();
 			load_frame();
 			check_mirror_image();
-			if (distance_mirror >= 0 && custom->show_mirror_image && Char.room == drawn_room) {
+			if (distance_mirror >= 0 && custom->show_mirror_image) {
 				load_frame_to_obj();
 				reset_obj_clip();
 				clip_top = y_clip[Char.curr_row + 1];
@@ -630,9 +633,6 @@ Possible results in can_guard_see_kid:
 	short right_pos;
 	kid_frame = Kid.frame;
 	if (Guard.charid == charid_24_mouse) {
-		// If the prince is fighting a guard, and the player does a quickload to a state where the prince is near the mouse, the prince would draw the sword.
-		// The following line prevents this.
-		can_guard_see_kid = 0;
 		return;
 	}
 	if ((Guard.charid != charid_1_shadow || current_level == 12) &&
@@ -714,12 +714,12 @@ int __pascal far flash_if_hurt() {
 		if (is_joyst_mode && enable_controller_rumble) {
 			if (sdl_haptic != NULL) {
 				SDL_HapticRumblePlay(sdl_haptic, 1.0, 100); // rumble at full strength for 100 milliseconds
-#if SDL_VERSION_ATLEAST(2,0,9)
-			} else if (sdl_controller_ != NULL) {
-				SDL_GameControllerRumble(sdl_controller_, 0xFFFF, 0xFFFF, 100);
-			} else {
-				SDL_JoystickRumble(sdl_joystick_, 0xFFFF, 0xFFFF, 100);
-#endif
+//#if SDL_VERSION_ATLEAST(2,0,9)
+//			} else if (sdl_controller_ != NULL) {
+//				SDL_GameControllerRumble(sdl_controller_, 0xFFFF, 0xFFFF, 100);
+//			} else {
+//				SDL_JoystickRumble(sdl_joystick_, 0xFFFF, 0xFFFF, 100);
+//#endif
 			}
 		}
 		do_flash(color_12_brightred); // red
@@ -737,3 +737,5 @@ void __pascal far remove_flash_if_hurt() {
 	}
 	remove_flash();
 }
+
+

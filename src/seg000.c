@@ -62,8 +62,9 @@ void far pop_main() {
 #ifdef USE_MENU
 	load_ingame_settings();
 #endif
-	if (check_param("mute")) is_sound_on = 0;
 	turn_sound_on_off((is_sound_on != 0) * 15); // Turn off sound/music if those options were set.
+	Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,4096);
+
 
 #ifdef USE_REPLAY
 	if (g_argc > 1) {
@@ -97,7 +98,7 @@ void far pop_main() {
 
 	/*video_mode =*/ parse_grmode();
 
-	init_timer(BASE_FPS);
+	init_timer(60);
 	parse_cmdline_sound();
 
 	set_hc_pal();
@@ -131,9 +132,6 @@ void far pop_main() {
 			}
 		}
 	}
-
-	play_demo_level = (check_param("playdemo") != NULL);
-
 #ifdef USE_SCREENSHOT
 	init_screenshot();
 #endif
@@ -185,6 +183,7 @@ word first_start = 1;
 jmp_buf setjmp_buf;
 // seg000:0358
 void __pascal far start_game() {
+	Mix_HaltMusic();
 #ifdef USE_COPYPROT
 	word which_entry;
 	word pos;
@@ -339,9 +338,6 @@ int quick_process(process_func_type process_func) {
 #ifdef USE_REPLAY
 	process(curr_tick);
 #endif
-#ifdef USE_COLORED_TORCHES
-	process(torch_colors);
-#endif
 #undef process
 	return ok;
 }
@@ -383,8 +379,7 @@ void restore_room_after_quick_load() {
 
 	//need_full_redraw = 1;
 	different_room = 1;
-	// Show the room where the prince is, even if the player moved the view away from it (with the H,J,U,N keys).
-	next_room = drawn_room = Kid.room;
+	next_room = drawn_room;
 	load_room_links();
 	//draw_level_first();
 	//gen_palace_wall_colors();
@@ -393,13 +388,6 @@ void restore_room_after_quick_load() {
 	//redraw_screen(1); // for room_L
 
 	hitp_delta = guardhp_delta = 1; // force HP redraw
-	// Don't draw guard HP if a previously viewed room (with the H,J,U,N keys) had a guard but the current room doesn't have one.
-	if (Guard.room != drawn_room) {
-		// Like in clear_char().
-		Guard.direction = dir_56_none;
-		guardhp_curr = 0;
-	}
-
 	draw_hp();
 	loadkid_and_opp();
 	// Get rid of "press button" message if kid was dead before quickload.
@@ -533,7 +521,7 @@ int __pascal far process_key() {
 				start_recording();
 			} else
 			#endif
-			if (key == (SDL_SCANCODE_L | WITH_CTRL)) { // Ctrl+L
+			if (key == (SDL_SCANCODE_L | WITH_CTRL)) { // ctrl-L
 				if (!load_game()) return 0;
 			} else {
 				start_level = custom->first_level; // 1
@@ -548,9 +536,9 @@ int __pascal far process_key() {
 			start_game();
 		}
 	}
-	// If the Kid died, Enter or Shift will restart the level.
+	// If the Kid died, enter or shift will restart the level.
 	if (rem_min != 0 && Kid.alive > 6 && (control_shift || key == SDL_SCANCODE_RETURN)) {
-		key = SDL_SCANCODE_A | WITH_CTRL; // Ctrl+A
+		key = SDL_SCANCODE_A | WITH_CTRL; // ctrl-a
 	}
 #ifdef USE_REPLAY
 	if (recording) key_press_while_recording(&key);
@@ -560,7 +548,7 @@ int __pascal far process_key() {
 	if (is_keyboard_mode) clear_kbd_buf();
 
 	switch(key) {
-		case SDL_SCANCODE_ESCAPE: // Esc
+		case SDL_SCANCODE_ESCAPE: // esc
 		case SDL_SCANCODE_ESCAPE | WITH_SHIFT: // allow pause while grabbing
 			is_paused = 1;
 #ifdef USE_MENU
@@ -575,23 +563,23 @@ int __pascal far process_key() {
 			}
 #endif
 		break;
-		case SDL_SCANCODE_SPACE: // Space
+		case SDL_SCANCODE_SPACE: // space
 			is_show_time = 1;
 		break;
-		case SDL_SCANCODE_A | WITH_CTRL: // Ctrl+A
+		case SDL_SCANCODE_A | WITH_CTRL: // ctrl-a
 			if (current_level != 15) {
 				stop_sounds();
 				is_restart_level = 1;
 			}
 		break;
-		case SDL_SCANCODE_G | WITH_CTRL: // Ctrl+G
+		case SDL_SCANCODE_G | WITH_CTRL: // ctrl-g
 			// CusPoP: first and last level where saving is allowed
 //			if (current_level > 2 && current_level < 14) { // original
 			if (current_level >= custom->saving_allowed_first_level && current_level <= custom->saving_allowed_last_level) {
 				save_game();
 			}
 		break;
-		case SDL_SCANCODE_J | WITH_CTRL: // Ctrl+J
+		case SDL_SCANCODE_J | WITH_CTRL: // ctrl-j
 			if ((sound_flags & sfDigi) && sound_mode == smTandy) {
 				answer_text = "JOYSTICK UNAVAILABLE";
 			} else {
@@ -603,20 +591,20 @@ int __pascal far process_key() {
 			}
 			need_show_text = 1;
 		break;
-		case SDL_SCANCODE_K | WITH_CTRL: // Ctrl+K
+		case SDL_SCANCODE_K | WITH_CTRL: // ctrl-k
 			answer_text = "KEYBOARD MODE";
 			is_joyst_mode = 0;
 			is_keyboard_mode = 1;
 			need_show_text = 1;
 		break;
-		case SDL_SCANCODE_R | WITH_CTRL: // Ctrl+R
+		case SDL_SCANCODE_R | WITH_CTRL: // ctrl-r
 			start_level = -1;
 #ifdef USE_MENU
 			if (is_menu_shown) menu_was_closed(); // Do necessary cleanup.
 #endif
 			start_game();
 		break;
-		case SDL_SCANCODE_S | WITH_CTRL: // Ctrl+S
+		case SDL_SCANCODE_S | WITH_CTRL: // ctrl-s
 			turn_sound_on_off((!is_sound_on) * 15);
 			answer_text = "SOUND OFF";
 			if (is_sound_on) {
@@ -625,13 +613,13 @@ int __pascal far process_key() {
 			//
 			need_show_text = 1;
 		break;
-		case SDL_SCANCODE_V | WITH_CTRL: // Ctrl+V
+		case SDL_SCANCODE_V | WITH_CTRL: // ctrl-v
 			//answer_text = "PRINCE OF PERSIA  V1.0";
 			snprintf(sprintf_temp, sizeof(sprintf_temp), "SDLPoP v%s\n", SDLPOP_VERSION);
 			answer_text = sprintf_temp;
 			need_show_text = 1;
 		break;
-		case SDL_SCANCODE_C | WITH_CTRL: // Ctrl+C
+		case SDL_SCANCODE_C | WITH_CTRL: // ctrl-c
 		{
 			SDL_version verc, verl;
 			SDL_VERSION (&verc);
@@ -644,16 +632,16 @@ int __pascal far process_key() {
 			need_show_text = 1;
 		}
 		break;
-		case SDL_SCANCODE_L | WITH_SHIFT: // Shift+L
+		case SDL_SCANCODE_L | WITH_SHIFT: // shift-l
 			if (current_level < custom->shift_L_allowed_until_level /* 4 */ || cheats_enabled) {
-				// if Shift is not released within the delay, the cutscene is skipped
+				// if shift is not released within the delay, the cutscene is skipped
 				Uint32 delay = 250;
 				key_states[SDL_SCANCODE_LSHIFT] = 0;
 				key_states[SDL_SCANCODE_RSHIFT] = 0;
 				SDL_TimerID timer;
 				timer = SDL_AddTimer(delay, temp_shift_release_callback, NULL);
 				if (timer == 0) {
-					sdlperror("process_key: SDL_AddTimer");
+					sdlperror("SDL_AddTimer");
 					quit(1);
 				}
 				if (current_level == 14) {
@@ -667,6 +655,7 @@ int __pascal far process_key() {
 						}
 #endif
 					} else {
+						Mix_HaltMusic();
 						next_level = current_level + 1;
 						if (!cheats_enabled && rem_min > custom->shift_L_reduced_minutes /* 15 */) {
 							rem_min = custom->shift_L_reduced_minutes; // 15
@@ -706,7 +695,7 @@ int __pascal far process_key() {
 				answer_text = /*&*/sprintf_temp;
 				need_show_text = 1;
 			break;
-			case SDL_SCANCODE_C | WITH_SHIFT: // Shift+C
+			case SDL_SCANCODE_C | WITH_SHIFT: // shift-c
 				snprintf(sprintf_temp, sizeof(sprintf_temp), "AL%d AR%d BL%d BR%d", room_AL, room_AR, room_BL, room_BR);
 				answer_text = /*&*/sprintf_temp;
 				need_show_text = 1;
@@ -745,18 +734,17 @@ int __pascal far process_key() {
 					resurrect_time = 20;
 					Kid.alive = -1;
 					erase_bottom_text(1);
+					play_bgm("data/music/level1.ogg",-1,0);
 				}
 			break;
 			case SDL_SCANCODE_K: // K --> kill guard cheat
-				if (Guard.charid != charid_4_skeleton) {
-					guardhp_delta = -guardhp_curr;
-					Guard.alive = 0;
-				}
+				guardhp_delta = -guardhp_curr;
+				Guard.alive = 0;
 			break;
-			case SDL_SCANCODE_I | WITH_SHIFT: // Shift+I --> invert cheat
+			case SDL_SCANCODE_I | WITH_SHIFT: // shift+I --> invert cheat
 				toggle_upside();
 			break;
-			case SDL_SCANCODE_W | WITH_SHIFT: // Shift+W --> feather fall cheat
+			case SDL_SCANCODE_W | WITH_SHIFT: // shift+W --> feather fall cheat
 				feather_fall();
 			break;
 			case SDL_SCANCODE_H: // H --> view room to the left
@@ -775,11 +763,7 @@ int __pascal far process_key() {
 				draw_guard_hp(0, 10);
 				next_room = room_B;
 			break;
-			case SDL_SCANCODE_B | WITH_CTRL: // Ctrl+B --> Go back to the room where the prince is. (Undo H,J,U,N.)
-				draw_guard_hp(0, 10);
-				next_room = Kid.room;
-			break;
-			case SDL_SCANCODE_B | WITH_SHIFT: // Shift+B
+			case SDL_SCANCODE_B | WITH_SHIFT: // shift-b
 				is_blind_mode = !is_blind_mode;
 				if (is_blind_mode) {
 					draw_rect(&rect_top, 0);
@@ -787,16 +771,18 @@ int __pascal far process_key() {
 					need_full_redraw = 1;
 				}
 			break;
-			case SDL_SCANCODE_S | WITH_SHIFT: // Shift+S
+			case SDL_SCANCODE_S | WITH_SHIFT: // shift-s
 				if (hitp_curr != hitp_max) {
-					play_sound(sound_33_small_potion); // small potion (cheat)
+					//play_sound(sound_33_small_potion); // small potion (cheat)
+					play_bgm("data/music/smallpotion.ogg",0,2);
 					hitp_delta = 1;
 					flash_color = 4; // red
 					flash_time = 2;
 				}
 			break;
-			case SDL_SCANCODE_T | WITH_SHIFT: // Shift+T
-				play_sound(sound_30_big_potion); // big potion (cheat)
+			case SDL_SCANCODE_T | WITH_SHIFT: // shift-t
+				//play_sound(sound_30_big_potion); // big potion (cheat)
+				play_bgm("data/music/bigpotion.ogg",0,2);
 				flash_color = 4; // red
 				flash_time = 4;
 				add_life();
@@ -819,6 +805,24 @@ int __pascal far process_key() {
 
 // seg000:08EB
 void __pascal far play_frame() {
+	
+	
+	if (music_mode == 2 && track != NULL){
+		if (Kid.frame != frame_0){
+			if (Mix_PlayingMusic() == 0){
+				if(Char.sword == sword_0_sheathed || holding_sword == 0){
+					music_mode = 0;
+					play_bgm("data/music/level1.ogg",-1,0);
+				}
+				else
+				{
+					music_mode = 1;
+					play_bgm("data/music/guardfight.ogg",-1,1);
+				}
+			}
+		}
+	}
+	
 	do_mobs();
 	process_trobs();
 	check_skel();
@@ -848,11 +852,13 @@ void __pascal far play_frame() {
 		if (roomleave_result == -2) {
 			Kid.y = -1;
 			stop_sounds();
+			Mix_HaltMusic();
 			++next_level;
 		}
 	} else if(/*current_level == 12*/ custom->tbl_seamless_exit[current_level] >= 0) {
 		// Special event: level 12 running exit
 		if (Kid.room == /*23*/ custom->tbl_seamless_exit[current_level]) {
+			Mix_HaltMusic();
 			++next_level;
 // Sounds must be stopped, because play_level_2() checks next_level only if there are no sounds playing.
 			stop_sounds();
@@ -1125,9 +1131,6 @@ void reset_level_unused_fields(bool loading_clean_level) {
 	memset(level.fill_2, 0, sizeof(level.fill_2));
 	memset(level.fill_3, 0, sizeof(level.fill_3));
 
-	// level.used_rooms is 25 on some levels. Limit it to the actual number of rooms.
-	if (level.used_rooms > 24) level.used_rooms = 24;
-
 	// For these fields, only use the bits that are actually used, and set the rest to zero.
 	// Good for repurposing the unused bits in the future.
 	int i;
@@ -1160,6 +1163,13 @@ int __pascal far play_kid_frame() {
 		return 1;
 	}
 	if (Char.room != 0) {
+		if(holding_sword == 1){
+			init_timer(60);
+		}
+		else{
+			//timewoohoo = 75 - (3 * obj_count);
+			init_timer(75);
+		}
 		play_seq();
 		fall_accel();
 		fall_speed();
@@ -1747,7 +1757,6 @@ void __pascal far toggle_upside() {
 
 // seg000:15F8
 void __pascal far feather_fall() {
-	printf("slow fall started at: rem_min = %d, rem_tick = %d\n", rem_min, rem_tick);
 	is_feather_fall = 1;
 	flash_color = 2; // green
 	flash_time = 3;
@@ -1912,10 +1921,6 @@ void __pascal far transition_ltr() {
 	// Estimated transition fps based on the speed of the transition on an Apple IIe.
 	// See: https://www.youtube.com/watch?v=7m7j2VuWhQ0
 	int transition_fps = 120;
-#ifdef USE_FAST_FORWARD
-	extern int audio_speed;
-	transition_fps *= audio_speed;
-#endif
 	Uint64 counters_per_frame = perf_frequency / transition_fps;
 	last_transition_counter = SDL_GetPerformanceCounter();
 	int overshoot = 0;
@@ -2273,10 +2278,8 @@ const rect_type splash_text_2_rect = {50, 0, 200, 320};
 
 const char* splash_text_1 = "SDLPoP " SDLPOP_VERSION;
 const char* splash_text_2 =
-#ifdef USE_QUICKSAVE
 		"To quick save/load, press F6/F9 in-game.\n"
 		"\n"
-#endif
 #ifdef USE_REPLAY
 		"To record replays, press Ctrl+Tab in-game.\n"
 		"To view replays, press Tab on the title screen.\n"
@@ -2297,7 +2300,6 @@ void show_splash() {
 	show_text_with_color(&splash_text_1_rect, 0, 0, splash_text_1, color_15_brightwhite);
 	show_text_with_color(&splash_text_2_rect, 0, -1, splash_text_2, color_7_lightgray);
 
-#ifdef USE_TEXT // Don't wait for a keypress if there is no text for the user to read.
 	int key = 0;
 	do {
 		idle();
@@ -2318,8 +2320,107 @@ void show_splash() {
 		extern int last_key_scancode; // defined in seg009.c
 		last_key_scancode = key; // can immediately do Ctrl+L, etc from the splash screen
 	}
-	key_states[SDL_SCANCODE_LSHIFT] = 0; // don't immediately start the game if Shift was pressed!
+	key_states[SDL_SCANCODE_LSHIFT] = 0; // don't immediately start the game if shift was pressed!
 	key_states[SDL_SCANCODE_RSHIFT] = 0;
-#endif
 }
+
+void __pascal far play_bgm(const char* trackname, int loop, int mode){
+	Mix_VolumeMusic(86);
+	music_mode = mode;
+	if (mode==0){					//ambient level mode
+	
+	SDL_Delay(music_timer);
+	music_timer = 0;
+	switch(current_level){
+		case 1:
+		case 2:
+		case 3:
+			track = Mix_LoadMUS("data/music/level1.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 4:
+		case 5:
+		case 6:
+			track = Mix_LoadMUS("data/music/level4.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 7:
+		case 8:
+		case 9:
+			track = Mix_LoadMUS("data/music/level1.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 10:
+		case 11:
+			track = Mix_LoadMUS("data/music/level4.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 12:
+		case 13:
+			track = Mix_LoadMUS("data/music/level12.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 14:
+			track = Mix_LoadMUS("data/music/level14.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		default:
+			track = Mix_LoadMUS(trackname);
+			Mix_PlayMusic(track,loop);
+	
+		}
+	} //end ambient level mode
+	
+	if (mode==1){				//guard mode
+	
+	
+	
+	switch(current_level){
+		case 1:
+		case 2:
+			track = Mix_LoadMUS("data/music/guardfight.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 3:
+			track = Mix_LoadMUS("data/music/skeletonfight.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+			track = Mix_LoadMUS("data/music/guardfight.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 12:
+			track = Mix_LoadMUS("data/music/shadowfight.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		case 13:
+			track = Mix_LoadMUS("data/music/jaffarfight.ogg");
+			Mix_PlayMusic(track,-1);
+			break;
+		default:
+			track = Mix_LoadMUS(trackname);
+			Mix_PlayMusic(track,loop);
+	
+		}
+	}
+	
+		
+	if (mode==2){					//special mode
+		track = Mix_LoadMUS(trackname);
+		Mix_PlayMusic(track,loop);
+	}
+	if (mode==3){				//special case for death music. A nasty quickfix
+	
+			track = Mix_LoadMUS(trackname);
+		
+		Mix_PlayMusic(track,loop);
+		}
+	}
 

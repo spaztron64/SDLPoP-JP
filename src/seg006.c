@@ -45,16 +45,6 @@ int __pascal far get_tile(int room,int col,int row) {
 // seg006:005D
 int __pascal far find_room_of_tile() {
 	again:
-	// Check tile_row < 0 first, this way the prince can grab a ledge at the bottom right corner of a room with no room below.
-	// Details: https://forum.princed.org/viewtopic.php?p=30410#p30410
-	if (tile_row < 0) {
-		tile_row += 3;
-		if (curr_room) {
-			curr_room = level.roomlinks[curr_room - 1].up;
-		}
-		//find_room_of_tile();
-		goto again;
-	}
 	if (tile_col < 0) {
 		tile_col += 10;
 		if (curr_room) {
@@ -62,17 +52,21 @@ int __pascal far find_room_of_tile() {
 		}
 		//find_room_of_tile();
 		goto again;
-	}
-	if (tile_col >= 10) {
+	} else if (tile_col >= 10) {
 		tile_col -= 10;
 		if (curr_room) {
 			curr_room = level.roomlinks[curr_room - 1].right;
 		}
 		//find_room_of_tile();
 		goto again;
-	}
-	// if (tile_row < 0) was here originally
-	if (tile_row >= 3) {
+	} else if (tile_row < 0) {
+		tile_row += 3;
+		if (curr_room) {
+			curr_room = level.roomlinks[curr_room - 1].up;
+		}
+		//find_room_of_tile();
+		goto again;
+	} else if (tile_row >= 3) {
 		tile_row -= 3;
 		if (curr_room) {
 			curr_room = level.roomlinks[curr_room - 1].down;
@@ -626,9 +620,12 @@ void __pascal far play_seq() {
 
 						if (is_sound_on) {
 							if (current_level == 4) {
-								play_sound(sound_32_shadow_music); // end level with shadow (level 4)
-							} else if (current_level != 13 && current_level != 15) {
-								play_sound(sound_41_end_level_music); // end level
+								//play_sound(sound_32_shadow_music); // end level with shadow (level 4)
+								play_bgm("data/music/exitleave.ogg",0,2);
+							//} else if (current_level != 13 && current_level != 15) {
+							} else {
+								//play_sound(sound_41_end_level_music); // end level
+								play_bgm("data/music/exitleave.ogg",0,2);
 							}
 						}
 						break;
@@ -1005,6 +1002,9 @@ void __pascal far start_fall() {
 	word seq_id;
 	frame = Char.frame;
 	Char.sword = sword_0_sheathed;
+	if (holding_sword == 1){
+		play_bgm("data/music/level1.ogg",-1,0);
+	}
 	inc_curr_row();
 	start_chompers();
 	fall_frame = frame;
@@ -1088,7 +1088,7 @@ void __pascal far check_grab() {
 	#define MAX_GRAB_FALLING_SPEED 32
 	#endif
 
-	if (control_shift < 0 && // press Shift to grab
+	if (control_shift < 0 && // press shift to grab
 		Char.fall_y < MAX_GRAB_FALLING_SPEED && // you can't grab if you're falling too fast ...
 		Char.alive < 0 && // ... or dead
 		(word)y_land[Char.curr_row + 1] <= (word)(Char.y + 25)
@@ -1195,7 +1195,7 @@ void __pascal far play_kid() {
 			set_start_pos();
 		}
 		if (check_sound_playing() && current_sound != 5) { // gate opening
-			return;
+		//	return;
 		}
 		is_show_time = 0;
 		if (Char.alive < 0 || Char.alive >= 6) {
@@ -1234,16 +1234,12 @@ void __pascal far control_kid() {
 	if (grab_timer != 0) {
 		--grab_timer;
 	}
-#ifdef USE_REPLAY
-	if (current_level == 0 && !play_demo_level && !replaying) {
-#else
-	if (current_level == 0 && !play_demo_level) {
-#endif
+	if (current_level == 0) {
 		do_demo();
 		control();
-		// The player can start a new game or load a saved game during the demo.
+		// we can start the game or load a game while the demo
 		key = key_test_quit();
-		if (key == (SDL_SCANCODE_L | WITH_CTRL)) { // Ctrl+L
+		if (key == 0x0C) { // ctrl-L
 			if (load_game()) {
 				start_game();
 			}
@@ -1688,7 +1684,10 @@ void __pascal far proc_get_object() {
 	if (Char.charid != charid_0_kid || pickup_obj_type == 0) return;
 	if (pickup_obj_type == -1) {
 		have_sword = -1;
-		play_sound(sound_37_victory); // get sword
+		//play_sound(sound_37_victory); // get sword
+		play_bgm("data/music/getsword.ogg",0,2);
+		//music_timer = 5000;
+		//play_bgm("data/music/level1.ogg",1,0);
 		flash_color = color_14_brightyellow;
 		flash_time = 8;
 	} else {
@@ -1696,20 +1695,27 @@ void __pascal far proc_get_object() {
 			case 0: // health
 				if (hitp_curr != hitp_max) {
 					stop_sounds();
-					play_sound(sound_33_small_potion); // small potion
+					//play_sound(sound_33_small_potion); // small potion
 					hitp_delta = 1;
 					flash_color = color_4_red;
 					flash_time = 2;
+					//music_timer = 1000;
+					play_bgm("data/music/smallpotion.ogg", 0, 2);
+					//play_bgm("data/music/level1.ogg", 0, 0);
 				}
 			break;
 			case 1: // life
 				stop_sounds();
-				play_sound(sound_30_big_potion); // big potion
+				//play_sound(sound_30_big_potion); // big potion
 				flash_color = color_4_red;
 				flash_time = 4;
 				add_life();
+				//music_timer = 2500;
+				play_bgm("data/music/bigpotion.ogg", 0, 2);
+				//play_bgm("data/music/level1.ogg", 0, 0);
 			break;
 			case 2: // feather
+				Mix_HaltMusic();
 				feather_fall();
 			break;
 			case 3: // invert
@@ -1744,13 +1750,16 @@ int __pascal far is_dead() {
 void __pascal far play_death_music() {
 	word sound_id;
 	if (Guard.charid == charid_1_shadow) {
-		sound_id = sound_32_shadow_music; // killed by shadow
+		//sound_id = sound_32_shadow_music; // killed by shadow
+		play_bgm("data/music/dead.ogg",0,3);
 	} else if (holding_sword) {
-		sound_id = sound_28_death_in_fight; // death in fight
+		//sound_id = sound_28_death_in_fight; // death in fight
+		play_bgm("data/music/dead2.ogg",0,3);
 	} else {
-		sound_id = sound_24_death_regular; // death not in fight
+		//sound_id = sound_24_death_regular; // death not in fight
+		play_bgm("data/music/dead.ogg",0,3);
 	}
-	play_sound(sound_id);
+	//play_sound(sound_id);
 }
 
 // seg006:15E8
@@ -1765,10 +1774,19 @@ void __pascal far on_guard_killed() {
 		flash_time = /*18*/ custom->jaffar_victory_flash_time;
 		is_show_time = 1;
 		leveldoor_open = 2;
-		play_sound(sound_43_victory_Jaffar); // Jaffar's death
+		//play_sound(sound_43_victory_Jaffar); // Jaffar's death
+		//music_timer = 3200;
+		play_bgm("data/music/guardkill.ogg", 0, 2);
+		//play_bgm("data/music/level1.ogg", -1, 0);
 	} else if (Char.charid != charid_1_shadow) {
-		play_sound(sound_37_victory); // Guard's death
+		//play_sound(sound_37_victory); // Guard's death
+		
+		//music_timer = 3200;
+		play_bgm("data/music/guardkill.ogg", 0, 2);
+		//play_bgm("data/music/level1.ogg", -1, 0);
+		
 	}
+	//init_timer(60);
 }
 
 // seg006:1634

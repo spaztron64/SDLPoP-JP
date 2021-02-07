@@ -83,7 +83,7 @@ void __pascal far check_shadow() {
 		Char.room = drawn_room;
 		if (Char.room == 1) {
 			if (leveldoor_open != 0x4D) {
-				play_sound(sound_25_presentation); // presentation (level 6 shadow)
+				//play_sound(sound_25_presentation); // presentation (level 6 shadow)
 				leveldoor_open = 0x4D;
 			}
 			do_init_shad(/*&*/custom->init_shad_6, 2 /*stand*/);
@@ -183,7 +183,7 @@ void __pascal far enter_guard() {
 	}
 
 	#ifdef REMEMBER_GUARD_HP
-	int remembered_hp = (level.guards_color[room_minus_1] & 0xF0) >> 4;
+	int remembered_hp = (curr_guard_color & 0xF0) >> 4;
 	#endif
 	curr_guard_color &= 0x0F; // added; only least significant 4 bits are used for guard color
 
@@ -516,7 +516,7 @@ void __pascal far sword_disappears() {
 void __pascal far meet_Jaffar() {
 	// Special event: play music
 	if (current_level == 13 && leveldoor_open == 0 && Char.room == 3) {
-		play_sound(sound_29_meet_Jaffar); // meet Jaffar
+		//play_sound(sound_29_meet_Jaffar); // meet Jaffar
 		// Special event: Jaffar waits a bit (28/12=2.33 seconds)
 		guard_notice_timer = 28;
 	}
@@ -532,7 +532,7 @@ void __pascal far play_mirr_mus() {
 		Char.curr_row == /*0*/ custom->mirror_row &&
 		Char.room == 11 /* TODO: add a custom option */
 	) {
-		play_sound(sound_25_presentation); // presentation (level 4 mirror)
+		//play_sound(sound_25_presentation); // presentation (level 4 mirror)
 		leveldoor_open = 0x4D;
 	}
 }
@@ -1188,6 +1188,7 @@ void __pascal far autocontrol_shadow_level12() {
 		// time of Kid-shadow flash
 		united_with_shadow = 42;
 		// put the Kid where the shadow was
+		play_bgm("data/music/bigpotion.ogg",0,2);
 		Char.charid = charid_0_kid;
 		savekid();
 		// remove the shadow
